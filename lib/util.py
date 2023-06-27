@@ -116,3 +116,25 @@ def create_binary_representated_vector(precision, start_point):
         pw -= 1
     
     return binary_code
+
+def generate_random_matrix(dimension):
+    return np.matrix(np.random.rand(dimension[0], dimension[1]) + 1) 
+
+def generate_target_matrix(dimension, precision, start_point):
+    binary_code = create_binary_representated_vector(precision, start_point)
+    
+    # it is declared as a matrix but actually a vector
+    # to multiply with matrix
+    binary_code_matrix = np.matrix(binary_code).transpose()
+    
+    columns = []
+
+    nrows, ncols = dimension
+    
+    for ncol in range(ncols): # nrow means # row <<>> nrows mean the number of rows
+        col_matrix = create_binary_variable_matrix('col%d' % ncol, (nrows, precision))
+        columns.append(np.array((col_matrix * binary_code_matrix).transpose())[0])
+          
+        
+        
+    return np.matrix(np.column_stack(columns))
