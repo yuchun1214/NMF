@@ -8,8 +8,41 @@ from . import api_key, dma_api_key, dau_url, dma_url
 
 
 
-def post_solve(problem_body):
+def post_solve(problem_body: dict) -> dict:
+    """Post and solve the problem using Fujitsu DAU API
 
+    The function posts the problem to Fujitsu DAU API. To post and solve the problem, it requires
+    the api_key. Please setup the api_key variables inadvance
+
+    In addition to posting the problem to Fujitsu DAU API, the function also registers the job_id to
+    the DAU management app to track the use of DAU. 
+    This also requires the dma_api_key. Please setup the dma_api_key variables inadvance.
+    For futher information about the DAU management app, please refer to the following link:
+        https://dau.emath.tw/
+
+    Args:
+        problem_body: dict object that contains the problem. 
+            For example, the problem_body for the following problem 2x1x2 - 4x2x4 - 3  is:
+            {
+                "fujitsuDA3": {
+                    "time_limit_sec": 10,
+                    "penalty_coef" : 1000,
+                    "num_run" : 16,
+                    "num_group" : 16,
+                    "gs_level" : 90,
+                    "gs_cutoff" : 90000,
+                },
+                "binary_polynomial": {
+                    "terms": [
+                        {"c": 2, "p": [1, 2] },
+                        {"c": -4, "p": [2, 4] },
+                        {"c": -3, "p": [] }
+                    ] 
+                }
+            }
+    
+    Return: dict object that contains the job_id.
+    """
     problem_header = {
         "Content-Type": "application/json",
         "Accept": "application/json",
@@ -34,10 +67,20 @@ def post_solve(problem_body):
     }))
     print(register_response.json())
     
-    return response
+    return response.json()
 
 
-def get_solution(job_id):
+def get_solution(job_id:str) -> dict:
+    """Get the solution of the problem using Fujitsu DAU API
+
+    The function gets the solution of the problem from Fujitsu DAU API. To get the solution, it requires
+    the api_key. Please setup the api_key variables inadvance and also give the job_id that is returned by the Fujitsu DAU API.
+
+    Args:
+        job_id: string object that contains the job_id.
+    
+    Return: dict object that contains the solution.
+    """
     solution_header = {
         "Job_ID": job_id,
         "Accept": "application/json",
@@ -47,8 +90,28 @@ def get_solution(job_id):
     return solution.json()
 
 
-def get_matrix_term(matrix_element, variables):
+def get_matrix_term(matrix_element:dict, variables:list) -> list:
+    """Get the matrix term from the qubo and variables
 
+    The function is used to get the matrix term from the qubo and variables and encode the matrix term in terms indecies.
+    For example, we already have the hamiltonian of the following problem 2x1x2 - 4x2x4 - 3, and the variables are [x1, x2, x4].
+
+    >>> from pyqubo import Binary
+    >>> x1 = Binary('x1')
+    >>> x2 = Binary('x2')
+    >>> x4 = Binary('x4')
+    >>> hamiltonian = 2*x1*x2 - 4*x2*x4 - 3
+    >>> model = hamiltonian.compile()
+    >>> qubo, offset = model.to_qubo()
+    >>> get_matrix_term(qubo, model.variables)
+    [{'c': 2.0, 'p': [0, 1]}, {'c': -4.0, 'p': [1, 2]}]
+
+    Args:
+        matrix_element: dict object that contains the qubo matrix elements.
+        variables: list object that contains model's variables.
+
+    Return: list object that contains the matrix term, which is encoded in terms indecies and the coefficients
+    """
     matrix_terms = []
     for key, value in matrix_element.items():
         term = {}
@@ -85,7 +148,18 @@ def binary_representation(number, precision):
     return int_binary_code, float_binary_code
 
 
-def delete_job(job_id):
+def delete_job(job_id:str) -> dict:
+    """Delete the job from the Fujitsu DAU API
+
+    The function deletes the job from the Fujitsu DAU API. To delete the job, it requires
+    the api_key. Please setup the api_key variables inadvance and also give the job_id that is returned by the Fujitsu DAU API.
+
+    Args:
+        job_id: string object that contains the job_id.
+
+    Return: dict object that contains the response of the delete request. The response would contain the result of
+    the computation, if the job is finished. Otherwise, the response would only contain the message. 
+    """
     solution_header = {
         "Job_ID": job_id,
         "Accept": "application/json",
